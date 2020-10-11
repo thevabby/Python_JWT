@@ -1,0 +1,89 @@
+# Connect-AzAccount
+ 
+ $server_list = Import-Csv .\data_2.csv
+
+foreach ($list in $server_list) {
+
+   $WebAppConfig = Get-AzWebAppAccessRestrictionConfig -ResourceGroupName $list.Resource_Group -Name $list.WebApp_Name
+   $IPAddress = $WebAppConfig.MainSiteAccessRestrictions.IPAddress
+   $RuleName = $WebAppConfig.MainSiteAccessRestrictions.RuleName
+
+   if($list.IP_Address -notin $IPAddress){
+      Write-Host $list.IP_Address is not part of access restrictions for $WebAppConfig.WebAppName.... adding it now..
+      Add-AzWebAppAccessRestrictionRule  -ResourceGroupName $list.Resource_Group -WebAppName $list.WebApp_Name -Name $list.Rule_Name -Priority $list.Priority -Action $list.Action -IpAddress $list.IP_Address
+
+   }
+   else {
+      Write-Host $list.IP_Address is already part of access restrictions for $WebAppConfig.WebAppName.... skipping it..
+   }
+}
+
+
+-------------------
+
+# Connect-AzAccount
+ 
+ $server_list = Import-Csv .\data.csv
+
+foreach ($list in $server_list) {
+
+         if ($list.Method -eq "get"){
+            Write-Host "-----------------------------------"
+             Write-Host $list.Resource_Group
+             Write-Host $list.Method
+             Write-Host $list.Server_Name
+             Write-Host "-----------------------------------"
+             
+            Get-AzSqlServerFirewallRule -ResourceGroupName $list.Resource_Group -ServerName $list.Server_Name | Export-Csv -NoTypeInformation output.csv
+
+         }
+
+         if ($list.Method -eq "SET"){
+
+            Write-Host "-----------------------------------"
+            Write-Host $list.Resource_Group
+            Write-Host $list.Method
+            Write-Host $list.Server_Name
+            Write-Host $list.Firewall_Rule_Name
+            Write-Host $list.Starting_Ip
+            Write-Host $list.End_Ip
+            Write-Host "-----------------------------------"
+
+            Set-AzSqlServerFirewallRule -ResourceGroupName $list.Resource_Group -ServerName $list.Server_Name -FirewallRuleName $list.Firewall_Rule_Name -StartIpAddress $list.Starting_Ip -EndIpAddress $list.End_Ip
+         }
+
+
+         if ($list.Method -eq "new"){
+
+            Write-Host "-----------------------------------"
+            Write-Host $list.Resource_Group
+            Write-Host $list.Method
+            Write-Host $list.Server_Name
+            Write-Host $list.Firewall_Rule_Name
+            Write-Host $list.Starting_Ip
+            Write-Host $list.End_Ip
+            Write-Host "-----------------------------------"
+
+            New-AzSqlServerFirewallRule -ResourceGroupName $list.Resource_Group -ServerName $list.Server_Name -FirewallRuleName $list.Firewall_Rule_Name -StartIpAddress $list.Starting_Ip -EndIpAddress $list.End_Ip
+         }
+}
+
+
+
+---------------------------
+
+Resource_Group,WebApp_Name,Rule_Name,IP_Address,Priority,Action
+vabby,vabbytestapp,test ip1,120.3.2.0/20,100,Allow
+vabby,vabbytestapp,test ip4,120.3.3.0/20,100,Allow
+vabby,vabbytestapp,IpRule,10.3.2.0/20,100,Allow
+
+
+--------------------------
+
+Method,Resource_Group,Server_Name,Firewall_Rule_Name,Starting_Ip,End_Ip
+get,Vabby,vabbysqlserver
+get,vabby,vabbysqlserver
+new,vabby,vabbysqlserver,test2,10.0.0.10,10.0.0.20
+new,vabby,vabbysqlserver,test3,10.0.0.30,10.0.0.40
+set,vabby,vabbysqlserver,test2,10.0.0.10,10.0.0.21
+set,vabby,vabbysqlserver,test3,10.0.0.30,10.0.0.41
